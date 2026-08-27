@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>DV Ai</title>
+<meta name="theme-color" content="#1877F2" />
+<meta name="description" content="DV Ai — private personal AI workspace" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231877F2'/%3E%3Ctext x='50' y='65' font-size='50' fill='white' text-anchor='middle' font-family='Arial'%3EDV%3C/text%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231877F2'/%3E%3Ctext x='50' y='65' font-size='50' fill='white' text-anchor='middle' font-family='Arial'%3EDV%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ============ GATE / AUTH SCREEN ============ -->
+<div id="dvGate" class="dv-gate">
+  <div class="dv-gate-card">
+    <div class="dv-gate-logo"><i class="fa-solid fa-shield-halved"></i></div>
+    <h1 class="dv-gate-title">DV Ai</h1>
+    <p class="dv-gate-sub">Private single-owner workspace</p>
+
+    <div id="dvGateStep1">
+      <label class="dv-label" for="dvEmailInput">Owner email</label>
+      <input id="dvEmailInput" class="dv-input" type="email" placeholder="you@example.com" autocomplete="email" />
+      <button id="dvBtnRequestCode" class="dv-btn dv-btn-primary">Send verification code</button>
+    </div>
+
+    <div id="dvGateStep2" class="dv-hidden">
+      <label class="dv-label" for="dvCodeInput">Enter 6-digit code</label>
+      <input id="dvCodeInput" class="dv-input dv-input-code" type="text" inputmode="numeric" maxlength="6" placeholder="••••••" />
+      <button id="dvBtnVerifyCode" class="dv-btn dv-btn-primary">Verify &amp; Continue</button>
+      <button id="dvBtnBackToEmail" class="dv-btn dv-btn-text">Use a different email</button>
+    </div>
+
+    <p id="dvGateMessage" class="dv-gate-message"></p>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="dvApp" class="dv-app dv-hidden">
+
+  <!-- Top bar -->
+  <header class="dv-topbar">
+    <button id="dvBtnLeftDrawer" class="dv-icon-btn" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+    <div class="dv-topbar-title">
+      <span id="dvChatTitle">DV Ai</span>
+    </div>
+    <button id="dvBtnRightDrawer" class="dv-icon-btn" aria-label="Settings"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+  </header>
+
+  <!-- Mode switcher -->
+  <nav class="dv-modebar">
+    <button class="dv-mode-btn dv-mode-active" data-mode="chat"><i class="fa-solid fa-message"></i> Chat</button>
+    <button class="dv-mode-btn" data-mode="code"><i class="fa-solid fa-code"></i> Code</button>
+    <button class="dv-mode-btn" data-mode="image"><i class="fa-solid fa-image"></i> Image</button>
+  </nav>
+
+  <!-- Chat / Code panel -->
+  <main id="dvMessages" class="dv-messages"></main>
+
+  <!-- Image panel -->
+  <main id="dvImagePanel" class="dv-image-panel dv-hidden">
+    <div id="dvImageHistory" class="dv-image-history"></div>
+    <div id="dvImageProgress" class="dv-image-progress dv-hidden">
+      <div class="dv-spinner"></div>
+      <span>Generating image…</span>
+    </div>
+  </main>
+
+  <!-- Typing indicator -->
+  <div id="dvTypingIndicator" class="dv-typing dv-hidden">
+    <span></span><span></span><span></span>
+  </div>
+
+  <!-- Composer -->
+  <footer class="dv-composer">
+    <button id="dvBtnNewChat" class="dv-icon-btn dv-composer-icon" aria-label="New chat"><i class="fa-solid fa-plus"></i></button>
+    <button id="dvBtnToggleSearch" class="dv-icon-btn dv-composer-icon" aria-label="Toggle web search" title="Search the web"><i class="fa-solid fa-globe"></i></button>
+    <textarea id="dvComposerInput" class="dv-composer-input" rows="1" placeholder="Message DV Ai…"></textarea>
+    <button id="dvBtnSend" class="dv-icon-btn dv-composer-send" aria-label="Send"><i class="fa-solid fa-paper-plane"></i></button>
+  </footer>
+
+</div>
+
+<!-- ============ LEFT DRAWER — INFORMATION ============ -->
+<div id="dvLeftDrawerOverlay" class="dv-drawer-overlay dv-hidden"></div>
+<aside id="dvLeftDrawer" class="dv-drawer dv-drawer-left">
+  <div class="dv-drawer-header">
+    <span class="dv-drawer-title">DV Ai</span>
+    <button id="dvBtnCloseLeftDrawer" class="dv-icon-btn"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <nav class="dv-drawer-list">
+    <button class="dv-drawer-item" data-panel="about-us"><i class="fa-solid fa-circle-info"></i> About Us</button>
+    <button class="dv-drawer-item" data-panel="about-developer"><i class="fa-solid fa-user"></i> About Developer</button>
+    <button class="dv-drawer-item" data-panel="terms"><i class="fa-solid fa-file-contract"></i> Terms of Use</button>
+    <button class="dv-drawer-item" data-panel="roadmap"><i class="fa-solid fa-road"></i> Roadmap</button>
+    <button class="dv-drawer-item" data-panel="proprietary"><i class="fa-solid fa-copyright"></i> Proprietary Software Notice</button>
+  </nav>
+</aside>
+
+<!-- ============ RIGHT DRAWER — SETTINGS ============ -->
+<div id="dvRightDrawerOverlay" class="dv-drawer-overlay dv-hidden"></div>
+<aside id="dvRightDrawer" class="dv-drawer dv-drawer-right">
+  <div class="dv-drawer-header">
+    <span class="dv-drawer-title">Settings</span>
+    <button id="dvBtnCloseRightDrawer" class="dv-icon-btn"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="dv-drawer-list">
+    <button class="dv-drawer-item" data-panel="account"><i class="fa-solid fa-id-badge"></i> User Account</button>
+    <button class="dv-drawer-item" data-panel="storage"><i class="fa-solid fa-database"></i> Chat Storage</button>
+    <button class="dv-drawer-item" data-panel="search"><i class="fa-solid fa-magnifying-glass"></i> Search Chats</button>
+
+    <div class="dv-drawer-section">
+      <span class="dv-drawer-section-label">Text size</span>
+      <input id="dvFontSlider" type="range" min="0" max="4" step="1" value="1" class="dv-slider" />
+    </div>
+
+    <div class="dv-drawer-section">
+      <span class="dv-drawer-section-label">Accent color</span>
+      <div id="dvAccentSwatches" class="dv-accent-swatches"></div>
+    </div>
+
+    <div class="dv-drawer-section dv-drawer-row">
+      <span class="dv-drawer-section-label">Dark mode</span>
+      <label class="dv-switch">
+        <input id="dvDarkModeToggle" type="checkbox" />
+        <span class="dv-switch-slider"></span>
+      </label>
+    </div>
+
+    <button id="dvBtnInstallApp" class="dv-drawer-item"><i class="fa-solid fa-download"></i> Install App</button>
+    <button id="dvBtnShareApp" class="dv-drawer-item"><i class="fa-solid fa-share-nodes"></i> Share App</button>
+    <button class="dv-drawer-item" data-panel="model"><i class="fa-solid fa-microchip"></i> AI Model</button>
+    <button id="dvBtnLogout" class="dv-drawer-item dv-drawer-item-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+  </div>
+</aside>
+
+<!-- ============ GENERIC PANEL MODAL (info pages, account, storage, search, model) ============ -->
+<div id="dvPanelOverlay" class="dv-panel-overlay dv-hidden">
+  <div class="dv-panel">
+    <div class="dv-panel-header">
+      <span id="dvPanelTitle" class="dv-panel-title">Panel</span>
+      <button id="dvBtnClosePanel" class="dv-icon-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="dvPanelBody" class="dv-panel-body"></div>
+  </div>
+</div>
+
+<!-- ============ CONFIRM MODAL (replaces confirm()) ============ -->
+<div id="dvConfirmOverlay" class="dv-panel-overlay dv-hidden">
+  <div class="dv-confirm-card">
+    <p id="dvConfirmMessage" class="dv-confirm-message"></p>
+    <div class="dv-confirm-actions">
+      <button id="dvConfirmCancel" class="dv-btn dv-btn-text">Cancel</button>
+      <button id="dvConfirmOk" class="dv-btn dv-btn-danger">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOAST CONTAINER ============ -->
+<div id="dvToastContainer" class="dv-toast-container"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="scripts/storage.js"></script>
+<script src="scripts/api.js"></script>
+<script src="scripts/app.js"></script>
+</body>
+</html>
