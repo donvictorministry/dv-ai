@@ -1,4 +1,3 @@
-
 /**
  * DV Ai — app.js
  * Main application controller: auth flow, chat/code/image modes,
@@ -900,15 +899,3 @@ const dvApp = (() => {
 })();
 
 document.addEventListener("DOMContentLoaded", dvApp.dvInit);
-
-
-
-
-
-
-
-
-
-
-
-
