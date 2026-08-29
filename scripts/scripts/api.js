@@ -1,148 +1,120 @@
 /**
  * DV Ai — api.js
- * All communication with the Cloudflare Worker backend.
+ * All communication with the Google Apps Script backend.
  *
- * IMPORTANT: Set DV_WORKER_URL to your deployed Worker URL after deployment.
- * Example: "https://dv-ai-worker.yoursubdomain.workers.dev"
+ * IMPORTANT: Set DV_GAS_URL to your deployed Apps Script Web App URL
+ * (ends in /exec) after deployment. See Apps Script Deployment.md.
+ *
+ * Every exported function here keeps the exact same name and signature
+ * as the previous Cloudflare version, so app.js requires no changes.
  */
 
-const DV_WORKER_URL = "https://dv-ai-worker.YOUR-SUBDOMAIN.workers.dev";
+const DV_GAS_URL = "https://script.google.com/macros/s/AKfycbzj_WL7wnC857ke5zh6dOmj6k0lDHBAzxXsmRWr0gppTdlFhYTbMtThRuYcSPt-Tq8D9w/exec";
 
 const dvApi = (() => {
-  function dvAuthHeaders() {
-    const token = dvStorage.dvGetPref("token");
-    return token ? { "Authorization": `Bearer ${token}` } : {};
+  function dvGetToken() {
+    return dvStorage.dvGetPref("token");
   }
 
-  async function dvRequest(path, options = {}) {
-    const resp = await fetch(`${DV_WORKER_URL}${path}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...dvAuthHeaders(),
-        ...(options.headers || {})
-      }
-    });
-
-    if (resp.status === 401) {
-      // Session invalid or revoked — force back to gate.
-      dvStorage.dvClearSession();
-      if (window.dvApp && typeof window.dvApp.dvHandleSessionExpired === "function") {
-        window.dvApp.dvHandleSessionExpired();
-      }
+  // Apps Script Web Apps only accept a single POST endpoint (no REST routes,
+  // no streaming). Every call sends { action, token, ...params } and gets
+  // back { ok, ... } — this wrapper mimics the old dvRequest() shape so
+  // callers don't need to know anything changed.
+  async function dvCall(action, params = {}) {
+    let resp;
+    try {
+      resp = await fetch(DV_GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" }, // avoids CORS preflight on GAS
+        body: JSON.stringify({ action, token: dvGetToken(), ...params })
+      });
+    } catch {
+      return { ok: false, error: "Network error. Check your connection." };
     }
 
     let data;
     try { data = await resp.json(); } catch { data = { ok: false, error: "Invalid server response." }; }
-    if (!resp.ok && !data.error) data.error = "Request failed.";
-    return { status: resp.status, ...data };
-  }
 
-  async function dvRequestCode(email, deviceName) {
-    return dvRequest("/api/auth/request-code", {
-      method: "POST",
-      body: JSON.stringify({ email, deviceName })
-    });
-  }
-
-  async function dvVerifyCode(pendingId, code, deviceName) {
-    return dvRequest("/api/auth/verify-code", {
-      method: "POST",
-      body: JSON.stringify({ pendingId, code, deviceName })
-    });
-  }
-
-  async function dvMe() {
-    return dvRequest("/api/auth/me", { method: "GET" });
-  }
-
-  async function dvLogout() {
-    return dvRequest("/api/auth/logout", { method: "POST" });
-  }
-
-  async function dvListDevices() {
-    return dvRequest("/api/devices", { method: "GET" });
-  }
-
-  async function dvRevokeDevice(deviceId) {
-    return dvRequest("/api/devices/revoke", {
-      method: "POST",
-      body: JSON.stringify({ deviceId })
-    });
-  }
-
-  async function dvGetModels() {
-    return dvRequest("/api/models", { method: "GET" });
-  }
-
-  async function dvListChats() {
-    return dvRequest("/api/chats", { method: "GET" });
-  }
-
-  async function dvGetChat(chatId) {
-    return dvRequest(`/api/chats/${chatId}`, { method: "GET" });
-  }
-
-  async function dvSaveChat(chat) {
-    return dvRequest("/api/chats", { method: "POST", body: JSON.stringify(chat) });
-  }
-
-  async function dvDeleteChat(chatId) {
-    return dvRequest(`/api/chats/${chatId}`, { method: "DELETE" });
-  }
-
-  async function dvClearAllChats() {
-    return dvRequest("/api/chats/clear", { method: "POST" });
-  }
-
-  // Streaming AI chat/code — returns an async generator yielding text deltas.
-  async function* dvStreamAiChat(mode, modelId, messages, useSearch = false) {
-    const resp = await fetch(`${DV_WORKER_URL}/api/ai/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...dvAuthHeaders() },
-      body: JSON.stringify({ mode, modelId, messages, useSearch })
-    });
-
-    if (resp.status === 401) {
+    if (!data.ok && data.error === "Unauthorized.") {
       dvStorage.dvClearSession();
       if (window.dvApp && typeof window.dvApp.dvHandleSessionExpired === "function") {
         window.dvApp.dvHandleSessionExpired();
       }
-      return;
     }
 
-    if (!resp.ok || !resp.body) {
-      throw new Error("AI request failed.");
-    }
+    return data;
+  }
 
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
+  async function dvRequestCode(email, deviceName) {
+    return dvCall("requestCode", { email, deviceName });
+  }
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop();
-      for (const line of lines) {
-        if (!line.startsWith("data:")) continue;
-        const dataStr = line.slice(5).trim();
-        if (!dataStr) continue;
-        try {
-          const evt = JSON.parse(dataStr);
-          if (evt.delta) yield evt.delta;
-          if (evt.done) return;
-        } catch { /* ignore malformed chunk */ }
-      }
+  async function dvVerifyCode(pendingId, code, deviceName) {
+    return dvCall("verifyCode", { pendingId, code, deviceName });
+  }
+
+  async function dvMe() {
+    return dvCall("me");
+  }
+
+  async function dvLogout() {
+    return dvCall("logout");
+  }
+
+  async function dvListDevices() {
+    return dvCall("listDevices");
+  }
+
+  async function dvRevokeDevice(deviceId) {
+    return dvCall("revokeDevice", { deviceId });
+  }
+
+  async function dvGetModels() {
+    // Apps Script backend uses a single free Gemini model — no multi-provider
+    // registry. Return a shape app.js already expects, so nothing downstream breaks.
+    return { ok: true, models: {
+      chat: [{ id: "gemini", label: "Gemini" }],
+      code: [{ id: "gemini", label: "Gemini" }],
+      image: []
+    }};
+  }
+
+  async function dvListChats() {
+    return dvCall("listChats");
+  }
+
+  async function dvGetChat(chatId) {
+    return dvCall("getChat", { chatId });
+  }
+
+  async function dvSaveChat(chat) {
+    return dvCall("saveChat", chat);
+  }
+
+  async function dvDeleteChat(chatId) {
+    return dvCall("deleteChat", { chatId });
+  }
+
+  async function dvClearAllChats() {
+    return dvCall("clearAllChats");
+  }
+
+  // NOTE: Apps Script cannot stream responses (it's request/response only,
+  // unlike the Cloudflare Worker's SSE streaming). This keeps the same
+  // async-generator shape app.js expects, but yields the full reply as one
+  // chunk instead of token-by-token — app.js's existing "for await" loop
+  // still works unchanged, it just renders in one step instead of live-typing.
+  async function* dvStreamAiChat(mode, modelId, messages, useSearch = false) {
+    const res = await dvCall("aiChat", { mode, messages });
+    if (!res.ok) {
+      throw new Error(res.error || "AI request failed.");
     }
+    yield res.text || "";
   }
 
   async function dvGenerateImage(prompt, modelId) {
-    return dvRequest("/api/ai/image", {
-      method: "POST",
-      body: JSON.stringify({ prompt, modelId })
-    });
+    // Image generation isn't available on the free Apps Script/Gemini stack yet.
+    return { ok: false, error: "Image generation isn't available in this build." };
   }
 
   return {
