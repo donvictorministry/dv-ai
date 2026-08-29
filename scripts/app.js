@@ -155,8 +155,15 @@ const dvApp = (() => {
 
     dvSetButtonLoading($("dvBtnRequestCode"), true, "Sending code...");
     $("dvGateMessage").textContent = "";
-    const res = await dvApi.dvRequestCode(email, dvDeviceLabel());
-    dvSetButtonLoading($("dvBtnRequestCode"), false);
+
+    let res;
+    try {
+      res = await dvApi.dvRequestCode(email, dvDeviceLabel());
+    } catch (err) {
+      res = { ok: false, error: "Unexpected error: " + (err && err.message ? err.message : String(err)) };
+    } finally {
+      dvSetButtonLoading($("dvBtnRequestCode"), false);
+    }
 
     if (res.ok) {
       dvState.pendingId = res.pendingId || null;
@@ -176,8 +183,15 @@ const dvApp = (() => {
     if (!dvState.pendingId) { $("dvGateMessage").textContent = "Please request a new code."; return; }
 
     dvSetButtonLoading($("dvBtnVerifyCode"), true, "Verifying...");
-    const res = await dvApi.dvVerifyCode(dvState.pendingId, code, dvDeviceLabel());
-    dvSetButtonLoading($("dvBtnVerifyCode"), false);
+
+    let res;
+    try {
+      res = await dvApi.dvVerifyCode(dvState.pendingId, code, dvDeviceLabel());
+    } catch (err) {
+      res = { ok: false, error: "Unexpected error: " + (err && err.message ? err.message : String(err)) };
+    } finally {
+      dvSetButtonLoading($("dvBtnVerifyCode"), false);
+    }
 
     if (res.ok && res.token) {
       dvStorage.dvSetPref("token", res.token);
