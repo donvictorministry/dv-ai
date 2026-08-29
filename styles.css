@@ -236,6 +236,13 @@ button, input, textarea { font-family: 'Roboto', sans-serif; }
   line-height: 1.4;
 }
 .dv-composer-send { background: var(--dv-accent); color: #fff; }
+.dv-btn-sending { opacity: 0.6; }
+.dv-btn-spinner {
+  display: inline-block; width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;
+  border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%;
+  animation: dv-spin 0.7s linear infinite;
+}
+.dv-btn[disabled] { opacity: 0.7; cursor: not-allowed; }
 .dv-composer-icon { color: var(--dv-text-secondary); }
 .dv-composer-icon-active { color: #fff; background: var(--dv-accent); }
 
