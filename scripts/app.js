@@ -138,14 +138,25 @@ const dvApp = (() => {
     return `${label} — ${new Date().toLocaleDateString()}`;
   }
 
+  function dvSetButtonLoading(btn, isLoading, loadingText) {
+    if (isLoading) {
+      btn.dataset.originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="dv-btn-spinner"></span>' + (loadingText || "Please wait...");
+    } else {
+      btn.disabled = false;
+      if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+    }
+  }
+
   async function dvHandleRequestCode() {
     const email = $("dvEmailInput").value.trim();
     if (!email) { $("dvGateMessage").textContent = "Please enter an email."; return; }
 
-    $("dvBtnRequestCode").disabled = true;
+    dvSetButtonLoading($("dvBtnRequestCode"), true, "Sending code...");
     $("dvGateMessage").textContent = "";
     const res = await dvApi.dvRequestCode(email, dvDeviceLabel());
-    $("dvBtnRequestCode").disabled = false;
+    dvSetButtonLoading($("dvBtnRequestCode"), false);
 
     if (res.ok) {
       dvState.pendingId = res.pendingId || null;
@@ -164,9 +175,9 @@ const dvApp = (() => {
     if (!code || code.length !== 6) { $("dvGateMessage").textContent = "Enter the 6-digit code."; return; }
     if (!dvState.pendingId) { $("dvGateMessage").textContent = "Please request a new code."; return; }
 
-    $("dvBtnVerifyCode").disabled = true;
+    dvSetButtonLoading($("dvBtnVerifyCode"), true, "Verifying...");
     const res = await dvApi.dvVerifyCode(dvState.pendingId, code, dvDeviceLabel());
-    $("dvBtnVerifyCode").disabled = false;
+    dvSetButtonLoading($("dvBtnVerifyCode"), false);
 
     if (res.ok && res.token) {
       dvStorage.dvSetPref("token", res.token);
@@ -284,6 +295,10 @@ const dvApp = (() => {
     input.value = "";
     dvAutoGrowTextarea();
 
+    const sendBtn = $("dvBtnSend");
+    sendBtn.disabled = true;
+    sendBtn.classList.add("dv-btn-sending");
+
     const userMsg = { role: "user", content: text, createdAt: Date.now() };
     dvState.messages.push(userMsg);
     dvRenderMessages();
@@ -314,6 +329,8 @@ const dvApp = (() => {
       dvShowToast("AI request failed. Please try again.");
     } finally {
       $("dvTypingIndicator").classList.add("dv-hidden");
+      sendBtn.disabled = false;
+      sendBtn.classList.remove("dv-btn-sending");
       dvRenderMessages();
       await dvPersistCurrentChat();
     }
