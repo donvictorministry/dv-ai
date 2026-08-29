@@ -1,4 +1,3 @@
-
 // DV Ai — Service Worker
 // Caches the app shell for offline load. API calls (network-dependent
 // AI/chat sync) always go to network — offline mode is shell-only.
