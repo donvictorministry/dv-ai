@@ -21,6 +21,10 @@ const dvApi = (() => {
   // back { ok, ... } — this wrapper mimics the old dvRequest() shape so
   // callers don't need to know anything changed.
   async function dvCall(action, params = {}) {
+    if (!DV_GAS_URL || DV_GAS_URL.indexOf("PASTE_YOUR") !== -1) {
+      return { ok: false, error: "Setup incomplete: DV_GAS_URL in scripts/api.js still has the placeholder value. Deploy Code.gs and paste the real /exec URL in." };
+    }
+
     let resp;
     try {
       resp = await fetch(DV_GAS_URL, {
