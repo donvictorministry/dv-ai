@@ -1,15 +1,10 @@
 /**
  * DV Ai — api.js
- * All communication with the Google Apps Script backend.
- *
- * IMPORTANT: Set DV_GAS_URL to your deployed Apps Script Web App URL
- * (ends in /exec) after deployment. See Apps Script Deployment.md.
- *
- * Every exported function here keeps the exact same name and signature
- * as the previous Cloudflare version, so app.js requires no changes.
+ * 
+ * 
  */
 
-const DV_GAS_URL = "https://script.google.com/macros/s/AKfycbzj_WL7wnC857ke5zh6dOmj6k0lDHBAzxXsmRWr0gppTdlFhYTbMtThRuYcSPt-Tq8D9w/exec";
+const DV_GAS_URL = "https://script.google.com/macros/s/AKfycbylk8YAuEwRX-ikolMkOJEd_9qDrter9nYHWArmCE9C9dxfZewnPIquLJ6BMDkp4Nnc/exec";
 
 const dvApi = (() => {
   function dvGetToken() {
