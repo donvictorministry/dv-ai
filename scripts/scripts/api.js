@@ -4,7 +4,7 @@
  * 
  */
 
-const DV_GAS_URL = "https://script.google.com/macros/s/AKfycbylk8YAuEwRX-ikolMkOJEd_9qDrter9nYHWArmCE9C9dxfZewnPIquLJ6BMDkp4Nnc/exec";
+const DV_GAS_URL = "https://script.google.com/macros/s/AKfycby_cwzx__yHBqO91EFba_bsIYvQAes5shsBUiJ-5NLXzhMT6CH3CqE5M6izSgHd9zfm/exec";
 
 const dvApi = (() => {
   function dvGetToken() {
