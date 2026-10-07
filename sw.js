@@ -2,7 +2,7 @@
 // Caches the app shell for offline load. API calls (network-dependent
 // AI/chat sync) always go to network — offline mode is shell-only.
 
-const DV_CACHE_NAME = "dv-ai-shell-v1";
+const DV_CACHE_NAME = "dv-ai-shell-v1.3";
 
 const DV_SHELL_FILES = [
   "./",
